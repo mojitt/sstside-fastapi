@@ -213,7 +213,7 @@ async def create_travel_plan(
             model="gpt-4o",
             input=prompt,
             max_output_tokens=3000,
-            temperature=0.7,
+            temperature=0.5,
             text={
                 "format": {
                     "type": "json_object"
