@@ -545,6 +545,7 @@ async def create_travel_plan(
                     plan["imgUrl"]     = place_info.get("imgUrl", "")
                     plan["lat"]        = place_info.get("y", "")
                     plan["lng"]        = place_info.get("x", "")
+                    plan["addr"]       = place_info.get("addr", "")
 
         # -------------------------------------------------
         # 응답 반환
