@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAI
 from dotenv import load_dotenv
+from ai.ai_client import request_travel_plan
+from api.data_client import fetch_place_list
 
 import uvicorn
-import requests
 import json
-import os
 import math
 
 
@@ -15,23 +14,10 @@ import math
 # =========================================================
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-SPRING_API_URL = os.getenv("SPRING_API_URL")
-
-
-# =========================================================
-# OpenAI Client 생성
-# =========================================================
-client = OpenAI(
-    api_key=OPENAI_API_KEY
-)
-
-
 # =========================================================
 # FastAPI 생성
 # =========================================================
 app = FastAPI()
-
 
 # =========================================================
 # CORS 설정
@@ -63,25 +49,11 @@ async def create_travel_plan(
         print("themes 수신값:", themes)
         theme_list = [t.strip() for t in themes.split(',') if t.strip()]
 
-        # -------------------------------------------------
-        # SpringBoot 여행지 API 호출
-        # -------------------------------------------------
-        spring_response = requests.get(
-            f"{SPRING_API_URL}/api/ai/travel/list",
-            params={
-                "region": region,
-                "themes": themes,
-            },
-            timeout=10
-        )
-
-        # -------------------------------------------------
-        # SpringBoot 응답 JSON -> 객체 변환
-        # -------------------------------------------------
-        place_list = spring_response.json()
-        
-        if spring_response.status_code != 200 or not isinstance(place_list, list):
-            return {"success": False, "message": f"Spring 오류: {spring_response.text[:200]}"}
+        # Spring API에서 여행지 목록 조회
+        try:
+            place_list = fetch_place_list(region, themes)
+        except Exception as e:
+            return {"success": False, "message": str(e)}
 
         # -------------------------------------------------
         # 여행지 없을 경우
@@ -206,25 +178,8 @@ async def create_travel_plan(
 }}
 """
 
-        # -------------------------------------------------
-        # OpenAI 호출
-        # -------------------------------------------------
-        response = client.responses.create(
-            model="gpt-4o",
-            input=prompt,
-            max_output_tokens=3000,
-            temperature=0.5,
-            text={
-                "format": {
-                    "type": "json_object"
-                }
-            }
-        )
-
-        # -------------------------------------------------
-        # GPT 응답 문자열
-        # -------------------------------------------------
-        result_text = response.output_text
+        # GPT-4o에 여행 일정 생성 요청
+        result_text = request_travel_plan(prompt)
 
         print("========== GPT RESPONSE ==========")
         print(result_text)
