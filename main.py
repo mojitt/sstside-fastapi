@@ -90,7 +90,7 @@ app.add_middleware(
 # =========================================================
 # 여행 일정 생성 API
 # =========================================================
-@app.get("/travel/plan")
+@app.get("/ai/travel/plan")
 async def create_travel_plan(
     region    : str,
     days      : int,
