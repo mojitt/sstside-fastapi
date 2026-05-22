@@ -1,6 +1,8 @@
 name: Deploy FastAPI
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
     types: [closed]
@@ -41,13 +43,13 @@ jobs:
               # 디렉토리가 있으면 삭제 후 clone
               find ${{ secrets.OCI_DEPLOY_PATH }} -maxdepth 0 -type d -exec sudo rm -rf {} +
               echo "기존 디렉토리 삭제 완료"
-              git clone https://${{ secrets.GIT_TOKEN }}@github.com/koreasmart/ks58-ai-backend.git ${{ secrets.OCI_DEPLOY_PATH }}
+              git clone https://${{ secrets.GIT_TOKEN }}@github.com/mojitt/sst-fastApi.git ${{ secrets.OCI_DEPLOY_PATH }}
               echo "clone 완료"
             fi
             
             # 3. 최신 코드 pull
             cd ${{ secrets.OCI_DEPLOY_PATH }}
-            git pull origin master
+            git pull origin main
             
             # 4. .env 파일 생성
             if [ ! -f ${{ secrets.OCI_DEPLOY_PATH }}/.env ]; then
@@ -61,7 +63,7 @@ jobs:
             
             # 5. venv 없으면 생성
             if [ ! -f "venv/bin/activate" ]; then
-              python3.12 -m venv venv
+              python3.11 -m venv venv
               echo "venv 생성 완료"
             fi
             
