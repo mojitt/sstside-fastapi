@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 from ai.ai_client import request_travel_plan
 from api.data_client import fetch_place_list
 
@@ -21,19 +21,23 @@ load_dotenv()
 # =========================================================
 # 로그 설정
 # =========================================================
-os.makedirs("logs", exist_ok=True)
+# 절대경로로 지정 - systemd 환경에서 상대경로 오작동 방지
+LOG_DIR = "/home/sst/ai-backend/logs"
+os.makedirs(LOG_DIR, exist_ok=True)
 
 # 로그 포맷
 formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
-# 파일 핸들러 - 10MB 초과 시 최대 5개까지 롤링
-file_handler = RotatingFileHandler(
-    "/home/sst/logs/fastapi.log",
-    maxBytes=10 * 1024 * 1024,
-    backupCount=5,
+# 날짜별 로그 파일 생성 - 매일 자정 교체, 30일치 보관
+file_handler = TimedRotatingFileHandler(
+    f"{LOG_DIR}/fastapi.log",
+    when="midnight",       # 매일 자정 교체
+    interval=1,            # 1일 단위
+    backupCount=30,        # 30일치 보관
     encoding="utf-8"
 )
-file_handler.setFormatter(formatter)
+# 파일명에 날짜 붙이기 ex) fastapi.log.2026-05-22
+file_handler.suffix = "%Y-%m-%d"
 
 # 콘솔 핸들러
 console_handler = logging.StreamHandler()
@@ -701,7 +705,7 @@ if __name__ == "__main__":
         "main:app",
         host="localhost",
         port=8090,
-        reload=True
+        reload=False
     )
 
 
