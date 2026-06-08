@@ -1,4 +1,4 @@
-# 🤖 경기도 스마트 여행 플래너 — FastAPI AI Server
+# 경기도 스마트 여행 플래너 — FastAPI AI Server
 
 > **팀명**: 식스센스 · GPT-4o 연동 AI 여행 일정 생성 서버  
 > **배포도메인**: https://sstour.cloud/
