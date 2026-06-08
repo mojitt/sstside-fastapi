@@ -41,8 +41,6 @@ GPT-4o의 응답을 구조화하여 Spring Boot로 반환하는 역할을 합니
 | Framework | FastAPI | 0.136.1 |
 | ASGI 서버 | Uvicorn | 0.46.0 |
 | AI | OpenAI API (GPT-4o) | 2.36.0 |
-| 데이터 처리 | Pandas | 3.0.2 |
-| 수치 연산 | NumPy | 2.4.4 |
 | 유효성 검증 | Pydantic | 2.13.4 |
 | HTTP 클라이언트 | httpx | 0.28.1 |
 | HTTP 클라이언트 | requests | 2.33.1 |
@@ -58,15 +56,24 @@ GPT-4o의 응답을 구조화하여 Spring Boot로 반환하는 역할을 합니
       │  지역 / 기간 / 테마 선택
       ▼
 [Spring Boot]
-      │  GET /api/ai/travel/list  → 장소 목록 조회
-      │
-      │  GET /ai/travel/plan      → FastAPI 호출
+      │  GET /ai/travel/plan 호출
       ▼
 [FastAPI :8090]
       │
-      ├─ Pandas로 장소 데이터 처리
+      ├─ 1. Spring Boot에 장소 목록 요청
+      │      GET /api/ai/travel/list (region, themes)
       │
-      └─ GPT-4o 프롬프트 전달 → 일정 생성 → Spring Boot 반환
+      ├─ 2. GPT-4o 프롬프트 구성 및 일정 생성 요청
+      │
+      ├─ 3. 응답 후처리
+      │      - 유효하지 않은 placeId 제거
+      │      - 이미지 없는 장소 교체
+      │      - 동선 클러스터링 (중심 좌표 기준 15km 초과 장소 교체)
+      │      - 슬롯 타입별 순서 재정렬
+      │
+      └─ 4. 결과 반환
+      ▼
+[Spring Boot] → [React Frontend]
 ```
 
 ---
@@ -75,13 +82,22 @@ GPT-4o의 응답을 구조화하여 Spring Boot로 반환하는 역할을 합니
 
 ### AI 여행 일정 생성
 - 지역·여행 기간·테마 조건을 기반으로 GPT-4o가 동선 최적화된 일정 자동 생성
-- Pandas를 통한 장소 데이터 전처리
 
 **지원 여행 기간**
 - 당일 여행 / 1박 2일 / 2박 3일
 
 **지원 테마** (최소 1개 ~ 최대 3개)
 - 축제/행사, 체험, 식도락, 역사, 레저, 테마파크
+
+### 응답 후처리
+- 유효하지 않은 placeId 제거
+- 이미지 없는 장소를 동일 카테고리·필터 내 이미지 있는 장소로 교체
+- Haversine 공식 기반 동선 클러스터링 (중심 좌표 기준 15km 초과 장소 자동 교체)
+- 슬롯 타입(테마·먹거리·카페·볼거리·숙소)별 순서 재정렬
+  
+### 로깅
+- 날짜별 로그 파일 생성 (`logs/fastapi.log.YYYY-MM-DD`)
+- 매일 자정 교체, 30일치 보관
 
 ---
 
