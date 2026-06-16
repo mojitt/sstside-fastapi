@@ -23,3 +23,16 @@ def request_travel_plan(prompt: str) -> str:
         }
     )
     return response.output_text
+
+
+def request_qna_answer(prompt: str) -> str:
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    response = client.responses.create(
+        model="gpt-4o",
+        input=prompt,
+        max_output_tokens=300,
+        temperature=0.3
+    )
+
+    return response.output_text

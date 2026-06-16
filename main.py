@@ -8,7 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from logging.handlers import TimedRotatingFileHandler
-from ai.ai_client import request_travel_plan
+from pydantic import BaseModel
+from ai.ai_client import request_travel_plan, request_qna_answer
 from api.data_client import fetch_place_list
 
 import uvicorn
@@ -86,6 +87,69 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# =========================================================
+# AI 고객지원 요청 모델
+# =========================================================
+class QnaRequest(BaseModel):
+    question: str
+    history: list = []
+    
+# =========================================================
+# AI 고객지원 QNA API
+# =========================================================
+@app.post("/ai/qna")
+async def qna_answer(request: QnaRequest):
+    try:
+        # 질문 앞뒤 공백 제거 및 최대 500자 제한
+        question = request.question.strip()[:500]
+
+        if not question:
+            return {
+                "success": False,
+                "answer": "질문을 입력해주세요."
+            }
+
+        # 최근 대화 기록 최대 5개만 프롬프트에 포함
+        history_text = ""
+
+        for item in request.history[-5:]:
+            history_text += f"""
+사용자: {item.get("question", "")}
+AI: {item.get("answer", "")}
+"""
+
+        # GPT에 전달할 프롬프트
+        prompt = f"""
+너는 SST 여행 플랫폼의 AI 고객지원 상담원이다.
+
+이전 대화:
+{history_text}
+
+현재 질문:
+{question}
+
+규칙:
+1. 답변은 3~5문장 이내로 작성한다.
+2. SST 서비스의 고객지원, FAQ, 로그인, 게시글, 댓글, 신고, 여행 일정 기능과 관련된 질문에 답변한다.
+3. 확실하지 않은 내용은 단정하지 말고 FAQ 또는 고객지원 확인을 안내한다.
+4. 개인정보, 비밀번호, 토큰 같은 민감정보는 요청하지 않는다.
+"""
+
+        # GPT 답변 생성
+        answer = request_qna_answer(prompt)
+
+        return {
+            "success": True,
+            "answer": answer
+        }
+
+    except Exception as e:
+        logger.error(f"AI QNA 오류: {str(e)}", exc_info=True)
+        return {
+            "success": False,
+            "answer": "죄송합니다. 현재 AI 답변을 불러올 수 없습니다."
+        }
 
 
 # =========================================================
