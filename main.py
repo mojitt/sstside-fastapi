@@ -9,7 +9,7 @@ load_dotenv()
 
 from logging.handlers import TimedRotatingFileHandler
 from pydantic import BaseModel
-from ai.ai_client import request_travel_plan, request_qna_answer
+from ai.ai_client import request_travel_plan, request_qna_answer, classify_qna_question
 from api.data_client import fetch_place_list
 
 import uvicorn
@@ -108,6 +108,14 @@ async def qna_answer(request: QnaRequest):
             return {
                 "success": False,
                 "answer": "질문을 입력해주세요."
+            }
+            
+        classification = classify_qna_question(question)
+
+        if "YES" not in classification:
+            return {
+                "success": True,
+                "answer": "죄송합니다. 저는 SST 고객지원 관련 질문에만 답변할 수 있습니다."
             }
 
         # 최근 대화 기록 최대 5개만 프롬프트에 포함
